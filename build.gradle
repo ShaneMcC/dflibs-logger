@@ -1,17 +1,36 @@
 plugins {
   id 'java'
   id 'idea'
+  id 'maven'
+  id 'maven-publish'
+  id "com.jfrog.bintray" version "1.7"
 }
 
 group = 'uk.org.dataforce.libs'
 
-sourceCompatibility = 1.6
-targetCompatibility = 1.6
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 sourceSets {
     main.java.srcDirs = ['src']
     test.java.srcDirs = ['test']
 }
+
+jar {
+    outputs.file "dist/dflibs-logger.jar"
+
+    manifest { }
+
+    doLast {
+        copy {
+            from jar.archivePath
+            into "dist/"
+            rename ".*", "dflibs-logger.jar"
+        }
+    }
+}
+
+apply from: 'gradle/publishing.gradle'
 
 task wrapper(type: Wrapper) {
     gradleVersion = '3.3'
