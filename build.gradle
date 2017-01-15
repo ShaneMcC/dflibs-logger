@@ -1,0 +1,19 @@
+plugins {
+  id 'java'
+  id 'idea'
+}
+
+group = 'uk.org.dataforce.libs'
+
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
+
+sourceSets {
+    main.java.srcDirs = ['src']
+    test.java.srcDirs = ['test']
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '3.3'
+}
+
