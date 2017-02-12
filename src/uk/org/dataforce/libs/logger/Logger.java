@@ -40,7 +40,16 @@ public class Logger {
     private static Writer writer = null;
 
     /** Date format for logging entries. */
-    private final static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+    /**
+     * Change the timestamp format.
+     *
+     * @param newFormat New format to use.
+     */
+    public static void setTimestampFormat(final SimpleDateFormat newFormat) {
+        sdf = newFormat;
+    }
 
     /**
      * Change the logTag for this logger.
@@ -90,8 +99,8 @@ public class Logger {
      */
     public static void log(final LogLevel level, final String data) {
         if (level.isLoggable(logLevel) && level != LogLevel.SILENT) {
-            final String timestamp = sdf.format(new Date(System.currentTimeMillis()));
-            final String output = (data == null) ? "" : String.format("<%s> [%s%s] %s", timestamp, (logTag.isEmpty() ? "" : logTag + ":"), level, data);
+            final String timestamp = sdf != null ? "<" + sdf.format(new Date(System.currentTimeMillis())) + "> " : "";
+            final String output = (data == null) ? "" : String.format("%s[%s%s] %s", timestamp, (logTag.isEmpty() ? "" : logTag + ":"), level, data);
 
             System.out.println(output);
             if (writer != null) {
