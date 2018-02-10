@@ -23,6 +23,7 @@
 package uk.org.dataforce.libs.logger;
 
 import java.io.Writer;
+import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -299,7 +300,10 @@ public class Logger {
         @Override
         public void publish(final LogRecord record) {
             final LogLevel level = mappings.getOrDefault(record.getLevel(), LogLevel.INFO);
-            Logger.log(level, record.getMessage());
+            final Object params[] = record.getParameters();
+            final String message = (params == null || params.length == 0) ? record.getMessage() : MessageFormat.format(record.getMessage(), record.getParameters());
+
+            Logger.log(level, message);
         }
 
         @Override
