@@ -25,6 +25,12 @@ package uk.org.dataforce.libs.logger;
 import java.io.Writer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
+import java.util.logging.LogRecord;
 
 /**
  * JISG Logger class.
@@ -41,6 +47,9 @@ public class Logger {
 
     /** Date format for logging entries. */
     private static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+    /** Have we added a JULHandler? */
+    private static boolean hasJULHandler = false;
 
     /**
      * Change the timestamp format.
@@ -92,15 +101,26 @@ public class Logger {
     }
 
     /**
-     * Log data at a customiseable log level.
+     * Log data at a customisable log level.
      *
      * @param level Level of this information.
      * @param data Information to log.
      */
     public static void log(final LogLevel level, final String data) {
+        log(level, logTag, data);
+    }
+
+    /**
+     * Log data at a customisable log level with a custom tag.
+     *
+     * @param level Level of this information.
+     * @param tag Tag to log with.
+     * @param data Information to log.
+     */
+    public static void log(final LogLevel level, final String tag, final String data) {
         if (level.isLoggable(logLevel) && level != LogLevel.SILENT) {
             final String timestamp = sdf != null ? "<" + sdf.format(new Date(System.currentTimeMillis())) + "> " : "";
-            final String output = (data == null) ? "" : String.format("%s[%s%s] %s", timestamp, (logTag.isEmpty() ? "" : logTag + ":"), level, data);
+            final String output = (data == null) ? "" : String.format("%s[%s%s] %s", timestamp, (tag == null || tag.isEmpty() ? "" : tag + ":"), level, data);
 
             System.out.println(output);
             if (writer != null) {
@@ -246,6 +266,46 @@ public class Logger {
         debug2("LogLevel changed to: "+level);
     }
 
+    /**
+     * Add a JUL handler.
+     */
+    public static void addJULHandler() {
+        if (hasJULHandler) { return; }
+        hasJULHandler = true;
+
+        LogManager.getLogManager().reset();
+        LogManager.getLogManager().getLogger("").addHandler(new JULHandler());
+    }
+
     /** Prevent instances of Logger */
     private Logger() {    }
+
+    /** java.util.logging Handler to redirect log messages. */
+    static class JULHandler extends Handler {
+        private final Map<Level, LogLevel> mappings = new HashMap<>();
+
+        private void JULHandler() {
+            mappings.put(Level.OFF, LogLevel.SILENT);
+            mappings.put(Level.ALL, LogLevel.DEBUG9);
+            mappings.put(Level.SEVERE, LogLevel.ERROR);
+            mappings.put(Level.WARNING, LogLevel.WARNING);
+            mappings.put(Level.INFO, LogLevel.INFO);
+            mappings.put(Level.FINE, LogLevel.DEBUG);
+            mappings.put(Level.FINER, LogLevel.DEBUG3);
+            mappings.put(Level.FINEST, LogLevel.DEBUG5);
+            mappings.put(Level.CONFIG, LogLevel.INFO);
+        }
+
+        @Override
+        public void publish(final LogRecord record) {
+            final LogLevel level = mappings.getOrDefault(record.getLevel(), LogLevel.INFO);
+            Logger.log(level, record.getMessage());
+        }
+
+        @Override
+        public void flush() { }
+
+        @Override
+        public void close() throws SecurityException { }
+    }
 }
