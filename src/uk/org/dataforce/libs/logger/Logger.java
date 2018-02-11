@@ -49,8 +49,8 @@ public class Logger {
     /** Date format for logging entries. */
     private static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-    /** Have we added a JULHandler? */
-    private static boolean hasJULHandler = false;
+    /** Have we added the JULHandler? */
+    private static JULHandler julHandler = null;
 
     /**
      * Change the timestamp format.
@@ -264,18 +264,20 @@ public class Logger {
      */
     public static void setLevel(final LogLevel level) {
         logLevel = level;
-        debug2("LogLevel changed to: "+level);
+        if (julHandler != null) {
+            julHandler.setLogLevel(getLevel());
+        }
+        debug2("LogLevel changed to: " + level);
     }
 
     /**
      * Add a JUL handler.
      */
     public static void addJULHandler() {
-        if (hasJULHandler) { return; }
-        hasJULHandler = true;
+        if (julHandler != null) { return; }
 
-        LogManager.getLogManager().reset();
-        LogManager.getLogManager().getLogger("").addHandler(new JULHandler());
+        julHandler = new JULHandler(LogManager.getLogManager());
+        julHandler.setLogLevel(getLevel());
     }
 
     /** Prevent instances of Logger */
@@ -284,17 +286,36 @@ public class Logger {
     /** java.util.logging Handler to redirect log messages. */
     static class JULHandler extends Handler {
         private final Map<Level, LogLevel> mappings = new HashMap<>();
+        private final Map<LogLevel, Level> reverseMappings = new HashMap<>();
 
-        private void JULHandler() {
-            mappings.put(Level.OFF, LogLevel.SILENT);
-            mappings.put(Level.ALL, LogLevel.DEBUG9);
-            mappings.put(Level.SEVERE, LogLevel.ERROR);
-            mappings.put(Level.WARNING, LogLevel.WARNING);
-            mappings.put(Level.INFO, LogLevel.INFO);
-            mappings.put(Level.FINE, LogLevel.DEBUG);
-            mappings.put(Level.FINER, LogLevel.DEBUG3);
-            mappings.put(Level.FINEST, LogLevel.DEBUG5);
-            mappings.put(Level.CONFIG, LogLevel.INFO);
+        private final LogManager manager;
+
+        private JULHandler(final LogManager manager) {
+            addMapping(Level.OFF, LogLevel.SILENT);
+            addMapping(Level.ALL, LogLevel.DEBUG9);
+            addMapping(Level.SEVERE, LogLevel.ERROR);
+            addMapping(Level.WARNING, LogLevel.WARNING);
+            addMapping(Level.INFO, LogLevel.INFO);
+            addMapping(Level.FINE, LogLevel.DEBUG);
+            reverseMappings.put(LogLevel.DEBUG2, Level.FINE);
+            addMapping(Level.FINER, LogLevel.DEBUG3);
+            reverseMappings.put(LogLevel.DEBUG4, Level.FINER);
+            addMapping(Level.FINEST, LogLevel.DEBUG5);
+            reverseMappings.put(LogLevel.DEBUG6, Level.FINEST);
+            reverseMappings.put(LogLevel.DEBUG7, Level.FINEST);
+            reverseMappings.put(LogLevel.DEBUG8, Level.FINEST);
+            reverseMappings.put(LogLevel.DEBUG9, Level.ALL);
+            addMapping(Level.CONFIG, LogLevel.INFO);
+
+            this.manager = manager;
+            manager.reset();
+            manager.getLogger("").addHandler(this);
+            super.setLevel(Level.ALL);
+        }
+
+        private void addMapping(final Level julLevel, final LogLevel ourLevel) {
+            mappings.put(julLevel, ourLevel);
+            reverseMappings.put(ourLevel, julLevel);
         }
 
         @Override
@@ -311,5 +332,15 @@ public class Logger {
 
         @Override
         public void close() throws SecurityException { }
+
+        public void setLogLevel(final LogLevel level) {
+            final Level newLevel = reverseMappings.getOrDefault(level, Level.INFO);
+            manager.getLogger("").setLevel(newLevel);
+        }
+
+        @Override
+        public void setLevel(final Level level) {
+            throw new UnsupportedOperationException("This handler does not allow setting the log level.");
+        }
     }
 }
