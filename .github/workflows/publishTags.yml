@@ -1,4 +1,4 @@
-name: Publish Snapshots to maven repo
+name: Publish Tags to maven repo
 
 on:
   create:
