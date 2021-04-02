@@ -25,7 +25,7 @@ publishing {
 				shane.appendNode('name', 'Shane Mc Cormack')
 				shane.appendNode('email', 'shanemcc@gmail.com')
 
-				asNode().'*'.findAll{ it.name() == 'dependencies' }.each{it.parent().remove(it)}
+				asNode().'*'.findAll{ (it.name() instanceof groovy.xml.QName ? it.name().getLocalPart() : it.name()) == 'dependencies' }.each{it.parent().remove(it)}
 				def dependenciesNode = asNode().appendNode('dependencies')
 
 				configurations.compile.allDependencies.each {
